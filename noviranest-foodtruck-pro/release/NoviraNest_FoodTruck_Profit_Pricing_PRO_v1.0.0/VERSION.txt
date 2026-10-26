@@ -1,0 +1,6 @@
+Food Truck Profit & Pricing System PRO
+Version 1.0.0
+Release date 2026-10-26
+
+Changelog
+- 1.0.0  First release.

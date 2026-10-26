@@ -1,0 +1,21 @@
+Using Food Truck Profit & Pricing System PRO in Google Sheets
+=============================================================
+
+1. Go to https://drive.google.com and sign in.
+2. Click  New > File upload  and choose  01_Excel/NoviraNest_FoodTruck_PRO_TEMPLATE_v1.0.0.xlsx
+3. Double-click the uploaded file to open it.
+4. Click  File > Save as Google Sheets.  A new Google Sheets copy opens - work in this copy.
+   (You can delete the uploaded .xlsx afterwards.)
+
+Optional: do the same with the SAMPLE file to explore the demo data in Google Sheets.
+
+WHAT IS DIFFERENT IN GOOGLE SHEETS
+- Money cells show plain numbers (e.g. 1,250.00). Google Sheets cannot change number formats with
+  conditional formatting, so the $ or £ symbol is shown in the column headers and on the Dashboard cards
+  instead. Switching Settings > Currency still updates every header and card.
+- Charts are converted by Google and may look slightly different (colours, label positions).
+- If a navigation link (e.g. "> Dashboard") does not jump, click the sheet tab at the bottom instead.
+- The Dashboard is protected to prevent accidental edits; Google may show a warning if you try to type there.
+- Formulas, dropdowns, warning colours and the monthly report are built to work the same way as in Excel.
+
+Tip: set File > Settings > Locale to your country so dates and numbers display the way you expect.

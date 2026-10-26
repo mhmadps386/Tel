@@ -71,7 +71,8 @@ def add_name(wb, name, ref):
 
 
 def dv_list(ws, source, cells, prompt=None, title=None, strict=True):
-    dv = DataValidation(type="list", formula1=source, allow_blank=True)
+    # OOXML stores validation formulas WITHOUT a leading "=" (Excel repairs the file otherwise)
+    dv = DataValidation(type="list", formula1=source.lstrip("="), allow_blank=True)
     dv.error = "Please pick a value from the dropdown list."
     dv.errorTitle = "Not in list"
     dv.showErrorMessage = strict
@@ -1761,7 +1762,7 @@ PREVIEW_AREAS = {
 }
 
 
-def build(kind, path, preview=False):
+def build(kind, path, preview=False, currency="USD"):
     sample = kind == "sample"
     data = SD.build_dataset() if sample else None
     wb = Workbook()
@@ -1774,6 +1775,7 @@ def build(kind, path, preview=False):
         sheets[name] = wb.create_sheet(name)
     build_lists(wb, sheets[LST])
     build_settings(wb, sheets[SET], sample)
+    sheets[SET]["C7"] = currency
     build_inventory(wb, sheets[INV], data)
     build_recipes(wb, sheets[REC], sample)
     build_menu(wb, sheets[MENU], sample)

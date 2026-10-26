@@ -44,7 +44,7 @@ import cannot mis-read them. This is a CSV-import artefact, not a formula incomp
 
 The Drive connector available here accepts uploads only as inline text, so the full .xlsx (≈1 MB) could not be
 uploaded from this environment. Features below are documented from Google's published import behaviour and must be
-confirmed with `docs/GOOGLE_SHEETS_CHECKLIST.md` before listing:
+confirmed with `docs/MANUAL_TEST_CHECKLIST.md` before listing:
 
 - Conditional-format **number formats** ($/£ on money cells) — Google Sheets does not support number formats in
   conditional formatting; money cells show plain numbers and the **headers/KPI cards carry the symbol**.

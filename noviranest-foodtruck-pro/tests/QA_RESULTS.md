@@ -1,8 +1,8 @@
 # Automated QA results
 
-Run: 2026-10-26 16:14 · engine: LibreOffice headless recalculation · expected values: tests/oracle.py (independent) and hand calculations
+Run: 2026-10-26 17:57 · engine: LibreOffice headless recalculation · expected values: tests/oracle.py (independent) and hand calculations
 
-**95 / 95 checks passed**
+**102 / 102 checks passed**
 
 ## Formula consistency & references
 
@@ -12,6 +12,18 @@ Run: 2026-10-26 16:14 · engine: LibreOffice headless recalculation · expected 
 | PASS | All named ranges used in formulas are defined |
 | PASS | No volatile/unsupported functions (INDIRECT, OFFSET, XLOOKUP, FILTER, LET, LAMBDA, macros) |
 | PASS | File is .xlsx (no VBA project) |
+
+## Excel strictness (OOXML)
+
+| Result | Check |
+|---|---|
+| PASS | sample: data-validation formulas have no leading '=' |
+| PASS | sample: no number-format ID collisions |
+| PASS | template: data-validation formulas have no leading '=' |
+| PASS | template: no number-format ID collisions |
+| PASS | No overlapping merged ranges |
+| PASS | All formulas under Excel's 8,192-character limit |
+| PASS | Only Excel-2010-era functions used (no _xlfn / dynamic arrays) |
 
 ## Sample workbook
 
@@ -175,6 +187,6 @@ Run: 2026-10-26 16:14 · engine: LibreOffice headless recalculation · expected 
 
 | Result | Check |
 |---|---|
-| PASS | 3,000 sales + 1,500 expenses + 50 menu items: zero errors (LibreOffice 5.0s) |
+| PASS | 3,000 sales + 1,500 expenses + 50 menu items: zero errors (LibreOffice 4.7s) |
 | PASS | Monthly revenue matches for all 12 months |
 | PASS | Annual COGS and opex totals |

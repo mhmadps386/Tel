@@ -477,6 +477,51 @@ def test_structure(sample_src):
     check(G, "File is .xlsx (no VBA project)", not (sample_src.read_bytes().find(b"vbaProject") >= 0))
 
 
+EXCEL_2010_FUNCS = {"SUM", "SUMIFS", "SUMIF", "SUMPRODUCT", "COUNTIF", "COUNTIFS", "AVERAGEIF", "INDEX", "MATCH", "IF", "IFERROR",
+                    "AND", "OR", "NOT", "N", "ISNUMBER", "ISNA", "TEXT", "ROUND", "ROUNDUP", "CEILING", "MIN", "MAX", "ABS",
+                    "DATE", "EOMONTH", "LARGE", "ROW", "REPT", "SEARCH", "LEFT", "INT", "LEN"}
+
+
+def test_ooxml_strict(sample_src, template_src):
+    """Checks for things Microsoft Excel is stricter about than LibreOffice / Google Sheets."""
+    import zipfile
+    G = "Excel strictness (OOXML)"
+    for label, src in (("sample", sample_src), ("template", template_src)):
+        z = zipfile.ZipFile(src)
+        sheets = [n for n in z.namelist() if n.startswith("xl/worksheets/sheet")]
+        bad_dv = [n for n in sheets if re.search(r"<formula[12]>=", z.read(n).decode())]
+        check(G, f"{label}: data-validation formulas have no leading '='", not bad_dv, str(bad_dv))
+        styles = z.read("xl/styles.xml").decode()
+        ids = re.findall(r'<numFmt numFmtId="(\d+)" formatCode="([^"]*)"', styles)
+        seen = {}
+        clash = [i for i, code in ids if seen.setdefault(i, code) != code]
+        check(G, f"{label}: no number-format ID collisions", not clash, str(clash))
+    wb = load_workbook(sample_src)
+    funcs, too_long, overlaps = set(), [], []
+    for ws in wb.worksheets:
+        cells = {}
+        for rngm in ws.merged_cells.ranges:
+            for r in range(rngm.min_row, rngm.max_row + 1):
+                for c in range(rngm.min_col, rngm.max_col + 1):
+                    if (r, c) in cells:
+                        overlaps.append(f"{ws.title}!{rngm}")
+                    cells[(r, c)] = 1
+        for row in ws.iter_rows():
+            for c in row:
+                v = c.value
+                if isinstance(v, str) and v.startswith("="):
+                    if len(v) > 8000:
+                        too_long.append(c.coordinate)
+                    funcs.update(re.findall(r"([A-Z][A-Z0-9.]*)\(", re.sub(r'"[^"]*"', "", v)))
+        for cf in ws.conditional_formatting:
+            for rule in cf.rules:
+                for fml in rule.formula or []:
+                    funcs.update(re.findall(r"([A-Z][A-Z0-9.]*)\(", re.sub(r'"[^"]*"', "", fml)))
+    check(G, "No overlapping merged ranges", not overlaps, str(overlaps[:5]))
+    check(G, "All formulas under Excel's 8,192-character limit", not too_long, str(too_long[:5]))
+    check(G, "Only Excel-2010-era functions used (no _xlfn / dynamic arrays)", funcs <= EXCEL_2010_FUNCS, str(sorted(funcs - EXCEL_2010_FUNCS)))
+
+
 def write_report():
     groups = defaultdict(list)
     for g, n, ok, d in RESULTS:
@@ -498,6 +543,7 @@ def write_report():
 if __name__ == "__main__":
     s, t = build_both()
     test_structure(s)
+    test_ooxml_strict(s, t)
     test_sample(s)
     test_period_and_presets(s)
     test_template(t)

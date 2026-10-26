@@ -121,7 +121,7 @@ def sheet_banner(ws, title, subtitle, last_col, nav=None, tab_color=TEAL):
     t.alignment = Alignment(vertical="center")
     s = ws.cell(row=3, column=2, value=subtitle)
     s.font = font(9, color=MUTED, italic=True)
-    brand = ws.cell(row=2, column=last_col, value="NoviraNest  ·  Food Truck Profit & Pricing PRO")
+    brand = ws.cell(row=2, column=last_col, value="NoviraNest")
     brand.font = font(8, bold=True, color=TEAL)
     brand.alignment = Alignment(horizontal="right", vertical="center")
     ws._nav = nav or []
@@ -150,7 +150,7 @@ def currency_cf(ws, ranges, symbol_ref, whole=False):
     Google Sheets ignores number formats in conditional formatting; headers carry the symbol there."""
     for code, (fmt2, fmt0) in CURRENCY_FORMATS.items():
         fmt = fmt0 if whole else fmt2
-        num_id = {('USD', False): 180, ('USD', True): 181, ('GBP', False): 182, ('GBP', True): 183}[(code, whole)]
+        num_id = {('USD', False): 300, ('USD', True): 301, ('GBP', False): 302, ('GBP', True): 303}[(code, whole)]
         dxf = DifferentialStyle(numFmt=NumberFormat(numFmtId=num_id, formatCode=fmt))
         rule = Rule(type="expression", dxf=dxf, formula=[f'{symbol_ref}="{code}"'])
         for rng in ranges:

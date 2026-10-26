@@ -1,0 +1,30 @@
+NoviraNest - Food Truck Profit & Pricing System PRO
+Licence for purchasers (version 1.0)
+
+Thank you for your purchase. By downloading or using these files you agree to the following.
+
+YOU MAY
+- Use the workbooks for ONE business (one legal entity), including its owners and staff.
+- Make copies for your own backups and for each year/season of that business.
+- Edit, extend and customise the workbooks for that business.
+- Print reports created with the workbooks.
+
+YOU MAY NOT
+- Share, give away, resell, sublicense or redistribute the files (modified or not), or upload them to any
+  public or shared template library, marketplace or website.
+- Sell or provide the workbooks, or a product based on them, to clients (e.g. as a consultant or bookkeeper)
+  without a separate written licence from NoviraNest.
+- Remove the NoviraNest copyright notices.
+
+DISCLAIMER
+The workbooks are management tools that produce estimates from the data you enter. They are provided "as is",
+without warranty of any kind. They are not tax, accounting, legal or financial advice. Check important decisions
+with a qualified professional. NoviraNest is not liable for losses arising from the use of the files.
+
+The sample workbook contains a fictional business. Its names and figures are invented for illustration and are
+not real results, forecasts or industry benchmarks.
+
+Microsoft Excel is a trademark of Microsoft Corporation. Google Sheets is a trademark of Google LLC. NoviraNest is
+not affiliated with or endorsed by either company.
+
+(c) 2026 NoviraNest. All rights reserved.
