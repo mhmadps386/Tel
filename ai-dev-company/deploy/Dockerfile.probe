@@ -1,0 +1,5 @@
+FROM python:3.13-slim
+RUN apt-get update && apt-get install -y --no-install-recommends bubblewrap && rm -rf /var/lib/apt/lists/*
+COPY orchestrator /app/orchestrator
+COPY deploy/sandbox_probe.py /app/sandbox_probe.py
+CMD ["sh", "-c", "python3 /app/sandbox_probe.py; sleep 3600"]
