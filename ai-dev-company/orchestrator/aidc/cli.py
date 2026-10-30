@@ -11,8 +11,9 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
-from . import policy
+from . import policy, sandbox
 from .board import Board, BoardError
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -53,6 +54,19 @@ def tool_version(argv):
 
 # -- commands ---------------------------------------------------------------
 
+def forced_login_method():
+    """Read only the `forced_login_method` line of Codex's config (never auth files)."""
+    path = os.path.join(os.environ.get("CODEX_HOME", os.path.expanduser("~/.codex")), "config.toml")
+    try:
+        with open(path) as fh:
+            for line in fh:
+                if line.split("=")[0].strip() == "forced_login_method":
+                    return line.split("=", 1)[1].strip().strip('"')
+    except OSError:
+        pass
+    return None
+
+
 def cmd_preflight(args):
     codex = shutil.which(args.codex_bin) or args.codex_bin
     info = {
@@ -62,6 +76,8 @@ def cmd_preflight(args):
         "codex": tool_version([codex, "--version"]),
         "codex_auth_mode": policy.codex_auth_mode(codex),
         "codex_multi_agent": None,
+        "codex_forced_login_method": forced_login_method(),
+        "os_sandbox_available": sandbox.available(),
         "claude_code": tool_version(["claude", "--version"]),
         "api_key_env_present": {k: k in os.environ for k in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY")},
     }
@@ -99,7 +115,16 @@ def cmd_ready(args):
 
 
 def cmd_claim(args):
-    emit(board_for(args.run).claim(args.task, args.agent))
+    board = board_for(args.run)
+    role = board.state()["tasks"].get(args.task, {}).get("role")
+    if role == "developer":
+        # Hand-driven agents (e.g. chat-session subagents) are not OS-sandboxed by aidc.
+        # Write tasks require an explicit acknowledgement, which is recorded in the run log.
+        if not args.unsandboxed_ack:
+            raise policy.PolicyError("manual claims of developer tasks are not OS-sandboxed; use "
+                                     "`aidc dispatch` (Codex sandbox) or pass --unsandboxed-ack")
+        board.log("policy.unsandboxed_claim", task=args.task, agent=args.agent)
+    emit(board.claim(args.task, args.agent))
 
 
 def cmd_complete(args):
@@ -158,6 +183,62 @@ def cmd_metrics(args):
     emit(board_for(args.run).metrics())
 
 
+def snapshot_ignore(root):
+    ignore = []
+    for path in (runs_root(), worktrees_root(), os.path.join(PROJECT_ROOT, ".tools")):
+        rel = os.path.relpath(path, root)
+        if not rel.startswith(".."):
+            ignore.append(rel)
+    return ignore
+
+
+def cmd_sandbox_exec(args):
+    """Run a command in the OS sandbox (used for verification and by hand-driven agents)."""
+    cmd = args.command[1:] if args.command[:1] == ["--"] else args.command
+    hide = [repo_root()] if not args.no_hide_repo else []
+    code, out, timed_out = sandbox.run(cmd, args.workdir, args.timeout, writable=args.writable,
+                                       readable=args.readable, hide=hide, network=args.network)
+    sys.stdout.write(out)
+    if timed_out:
+        print(f"aidc: sandbox timed out after {args.timeout}s", file=sys.stderr)
+    return code
+
+
+def cmd_review(args):
+    """Manager acceptance gate: objective checks, re-run tests in the OS sandbox, record the decision."""
+    board = board_for(args.run)
+    state = board.state()
+    dev = state["tasks"].get(args.task)
+    if not dev or dev["role"] != "developer":
+        raise BoardError(f"{args.task} is not a developer task")
+    qa = [t for t in state["tasks"].values() if args.task in t["depends_on"] and t["role"] == "qa"]
+    checks = {
+        "developer_done_pass": dev["status"] == "done" and dev["result"] == "pass",
+        "independent_qa_exists": bool(qa),
+        "qa_done_pass": bool(qa) and all(t["status"] == "done" and t["result"] == "pass" for t in qa),
+        "qa_agent_differs": bool(qa) and all(t["agent"] != dev["agent"] for t in qa),
+        "branch_recorded": bool(dev["branch"]),
+    }
+    test = {"exit_code": None}
+    if checks["branch_recorded"]:
+        root = repo_root()
+        path, branch = policy.create_worktree(root, worktrees_root(), args.run,
+                                              f"{args.task}-review-{int(time.time() * 1000)}", base=dev["branch"])
+        board.log("workspace.created", task=args.task, path=os.path.relpath(path, root), branch=branch, base=dev["branch"])
+        code, out, timed_out = sandbox.run(["sh", "-c", args.test_cmd], os.path.join(path, args.test_dir),
+                                           args.timeout, hide=[root])
+        evidence = os.path.join(board.run_dir, "evidence")
+        os.makedirs(evidence, exist_ok=True)
+        with open(os.path.join(evidence, f"manager-review-{args.task}.txt"), "w") as fh:
+            fh.write(f"$ {args.test_cmd}   (cwd={args.test_dir}, OS sandbox, no network)\n{out}\nexit={code} timed_out={timed_out}\n")
+        test = {"exit_code": code, "timed_out": timed_out, "evidence": f"evidence/manager-review-{args.task}.txt"}
+        checks["manager_tests_pass"] = code == 0 and not timed_out
+    accepted = all(checks.values()) and "manager_tests_pass" in checks
+    board.log("manager.accepted" if accepted else "manager.rejected", task=args.task, checks=checks, test=test)
+    emit({"task": args.task, "accepted": accepted, "checks": checks, "test": test})
+    return 0 if accepted else 1
+
+
 def cmd_dispatch(args):
     """Run every ready task through Codex until the board is drained, halted or max-tasks hit."""
     from .codex_runner import run_codex
@@ -169,6 +250,8 @@ def cmd_dispatch(args):
     dispatched = 0
     while dispatched < args.max_tasks:
         board.recover()
+        if board.state()["halted"]:
+            break
         ready = board.ready_tasks()
         if not ready:
             break
@@ -186,15 +269,18 @@ def cmd_dispatch(args):
         with open(os.path.join(PROMPTS_DIR, f"{task['role']}.md")) as fh:
             prompt = fh.read().format(task_id=task["id"], title=task["title"], spec=task["spec"],
                                       branch=branch, base=base)
-        sandbox = "read-only" if task["role"] == "qa" else "workspace-write"
-        result = run_codex(board, claimed, path, prompt, agent, codex_bin=codex, sandbox=sandbox)
+        mode = "read-only" if task["role"] == "qa" else "workspace-write"
+        result = run_codex(board, claimed, path, prompt, agent, codex_bin=codex, sandbox=mode,
+                           repo_root=root, snapshot_ignore=snapshot_ignore(root))
         if task["role"] == "developer" and result["status"] == "done":
             subprocess.run(["git", "-C", path, "add", "-A"], check=True)
             subprocess.run(["git", "-C", path, "commit", "-q", "-m", f"aidc {args.run}: {task['title']}"], check=False)
             with board._mutate() as st:  # remember the branch for dependants
                 st["tasks"][task["id"]]["branch"] = branch
         dispatched += 1
-    emit(board.metrics())
+    metrics = board.metrics()
+    emit(metrics)
+    return 3 if metrics["halted"] else 0
 
 
 def main(argv=None):
@@ -213,7 +299,8 @@ def main(argv=None):
     add("init", cmd_init, (("--goal",), {"required": True}), (("--run-id",), {}), run=False)
     add("plan", cmd_plan, (("--file",), {"required": True}))
     add("ready", cmd_ready, (("--role",), {"choices": ["developer", "qa"]}))
-    add("claim", cmd_claim, (("--task",), {"required": True}), (("--agent",), {"required": True}))
+    add("claim", cmd_claim, (("--task",), {"required": True}), (("--agent",), {"required": True}),
+        (("--unsandboxed-ack",), {"action": "store_true"}))
     add("complete", cmd_complete, (("--task",), {"required": True}), (("--agent",), {"required": True}),
         (("--result",), {"choices": ["pass", "fail"], "required": True}),
         (("--summary",), {"required": True}), (("--report-file",), {"required": True}))
@@ -231,13 +318,20 @@ def main(argv=None):
     add("dispatch", cmd_dispatch, (("--codex-bin",), {"default": "codex"}),
         (("--max-tasks",), {"type": int, "default": 4}))
 
+    add("review", cmd_review, (("--task",), {"required": True}),
+        (("--test-cmd",), {"default": "npm test"}), (("--test-dir",), {"default": "ai-dev-company/demo-app"}),
+        (("--timeout",), {"type": int, "default": 600}))
+    add("sandbox-exec", cmd_sandbox_exec, (("--workdir",), {"required": True}),
+        (("--writable",), {"action": "append", "default": []}), (("--readable",), {"action": "append", "default": []}),
+        (("--network",), {"action": "store_true"}), (("--no-hide-repo",), {"action": "store_true"}),
+        (("--timeout",), {"type": int, "default": 600}), (("command",), {"nargs": argparse.REMAINDER}), run=False)
+
     args = p.parse_args(argv)
     try:
-        args.fn(args)
-    except (BoardError, policy.PolicyError) as err:
+        return args.fn(args) or 0
+    except (BoardError, policy.PolicyError, sandbox.SandboxUnavailable) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
-    return 0
 
 
 if __name__ == "__main__":

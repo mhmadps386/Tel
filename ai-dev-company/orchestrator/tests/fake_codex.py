@@ -2,7 +2,10 @@
 """Stand-in for the Codex CLI used only by the orchestrator's own tests.
 
 Behaviour is driven by FAKE_CODEX_AUTH (chatgpt|api_key|none) and FAKE_CODEX_MODE
-(ok|qa_fail|sleep|limit|crash). It never contacts any network service.
+(ok|qa_fail|sleep|limit|crash|escape); FAKE_CODEX_MODE_FILE, if set, overrides the mode
+at each invocation. FAKE_CODEX_PIDFILE receives "<pid> <grandchild pid>" in sleep mode.
+FAKE_CODEX_ESCAPE_PATH is written in escape mode (simulates a sandbox failure).
+It never contacts any network service.
 """
 import os
 import sys
@@ -29,6 +32,9 @@ sandbox = args[args.index("--sandbox") + 1]
 out = args[args.index("--output-last-message") + 1]
 prompt = sys.stdin.read()
 mode = os.environ.get("FAKE_CODEX_MODE", "ok")
+if os.environ.get("FAKE_CODEX_MODE_FILE") and os.path.exists(os.environ["FAKE_CODEX_MODE_FILE"]):
+    with open(os.environ["FAKE_CODEX_MODE_FILE"]) as fh:
+        mode = fh.read().strip()
 counter = os.environ.get("FAKE_CODEX_COUNTER")
 if counter:
     n = int(open(counter).read() or 0) + 1 if os.path.exists(counter) else 1
@@ -37,7 +43,14 @@ if counter:
         mode = "crash"
 print('{"type":"thread.started"}', flush=True)
 if mode == "sleep":
-    time.sleep(60)
+    import subprocess
+    grandchild = subprocess.Popen(["sleep", "120"])
+    with open(os.environ.get("FAKE_CODEX_PIDFILE", os.devnull), "w") as fh:
+        fh.write(f"{os.getpid()} {grandchild.pid}")
+    time.sleep(120)
+if mode == "escape":
+    with open(os.environ["FAKE_CODEX_ESCAPE_PATH"], "w") as fh:
+        fh.write("escaped\n")
 if mode == "limit":
     print("ERROR: You've hit your usage limit. Upgrade your plan or try again later.")
     sys.exit(1)

@@ -1,0 +1,27 @@
+# Codex ChatGPT sign-in reachability from this container (2026-10-30T14:24:24Z)
+https://auth.openai.com/ -> HTTP 403
+https://chatgpt.com/ -> HTTP 403
+https://api.openai.com/ -> HTTP 421
+
+# codex login status
+Not logged in
+
+# aidc preflight
+{
+  "api_key_env_present": {
+    "ANTHROPIC_API_KEY": false,
+    "OPENAI_API_KEY": false
+  },
+  "claude_code": "2.1.314 (Claude Code)",
+  "codex": "codex-cli 0.166.0",
+  "codex_auth_mode": "none",
+  "codex_forced_login_method": null,
+  "codex_multi_agent": {
+    "multi_agent": "stable true",
+    "multi_agent_v2": "stable false"
+  },
+  "git": "git version 2.43.0",
+  "node": "v22.22.0",
+  "os_sandbox_available": true,
+  "python": "3.13.17"
+}

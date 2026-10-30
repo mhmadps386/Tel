@@ -1,0 +1,11 @@
+$ ./aidc sandbox-exec --workdir demo-app --timeout 120 -- npm test
+# tests 24
+# pass 24
+# fail 0
+
+$ ./aidc sandbox-exec --workdir demo-app -- sh -c "cp test/api.test.js /home/user/api.test.js; echo x > ../README.md; id -u; ls -A ~"
+cp: cannot create regular file '/home/user/api.test.js': Read-only file system
+sh: 1: cannot create ../README.md: Read-only file system
+1000
+exit=0
+host check: /home/user/api.test.js exists? no; README.md modified? no

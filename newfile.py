@@ -1,9 +1,10 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
+import os
 import requests
 
 # التوكن الخاص ببوتك
-BOT_TOKEN = "7041861528:AAFrczsJ7Wlqjqgd1uI9vn8Cg7UpMIW-NJc"
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")  # set in the environment; never hard-code
 
 # دالة البدء
 async def start(update: Update, context: CallbackContext):
@@ -40,6 +41,8 @@ async def handle_message(update: Update, context: CallbackContext):
 
 # تشغيل البوت
 if __name__ == "__main__":
+    if not BOT_TOKEN:
+        raise SystemExit("TELEGRAM_BOT_TOKEN is not set")
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # إعداد الأوامر

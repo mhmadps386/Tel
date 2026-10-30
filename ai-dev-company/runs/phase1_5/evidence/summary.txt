@@ -1,0 +1,7 @@
+orchestrator exit=0; demo-app exit=0
+Ran 45 tests in 26.445s
+
+OK
+# tests 24
+# pass 24
+# fail 0

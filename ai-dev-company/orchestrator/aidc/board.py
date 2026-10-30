@@ -20,7 +20,11 @@ ROLES = ("developer", "qa")
 TERMINAL = ("done", "failed", "cancelled")
 DEFAULT_TIMEOUT_S = 1800
 DEFAULT_MAX_ATTEMPTS = 2
-DEFAULT_LEASE_S = 2400
+
+
+def lease_grace_s():
+    """Extra time beyond a task's timeout before a "running" task is considered abandoned."""
+    return int(os.environ.get("AIDC_LEASE_GRACE_S", "600"))
 
 
 class BoardError(Exception):
@@ -174,12 +178,14 @@ class Board:
             task = self._task(state, task_id)
             if task not in self._ready(state):
                 raise BoardError(f"task {task_id} is not ready (status={task['status']})")
+            if task["attempts"] >= task["max_attempts"]:
+                raise BoardError(f"task {task_id} has used all {task['max_attempts']} attempts")
             task["status"] = "running"
             task["agent"] = agent
             task["attempts"] += 1
             task["started_at"] = now_iso()
             task["_started_monotonic"] = time.time()
-            task["lease_expires"] = time.time() + (lease_s or task["timeout_s"] + 600)
+            task["lease_expires"] = time.time() + (lease_s or task["timeout_s"] + lease_grace_s())
             self._event(state, "task.claimed", task=task_id, agent=agent, attempt=task["attempts"])
             return dict(task)
 
@@ -217,6 +223,23 @@ class Board:
                 self._event(state, "task.failed", task=task_id, agent=agent, error=error,
                             attempt=task["attempts"])
                 self._block_dependents(state, task_id)
+            return dict(task)
+
+    def release(self, task_id, agent, reason):
+        """Return a running task to the queue without judging it (e.g. the run was halted).
+
+        The attempt still counts toward max_attempts.
+        """
+        with self._mutate() as state:
+            task = self._task(state, task_id)
+            self._check_owner(task, agent)
+            self._finish(task, None)
+            task["errors"].append({"attempt": task["attempts"], "error": f"released: {reason}", "at": now_iso()})
+            task["agent"] = None
+            task["status"] = "pending" if task["attempts"] < task["max_attempts"] else "failed"
+            if task["status"] == "failed":
+                self._block_dependents(state, task_id)
+            self._event(state, "task.released", task=task_id, agent=agent, reason=reason, new_status=task["status"])
             return dict(task)
 
     def cancel(self, task_id, reason):

@@ -4,19 +4,21 @@ A manager agent breaks a requirement into tasks, hands them to a **developer** a
 independent **QA** agent, tracks progress on a task board, and produces a run log and report.
 The demo is disposable and runs only on this machine: nothing is deployed and nothing touches production.
 
-The final report is [`reports/PHASE1_REPORT.md`](reports/PHASE1_REPORT.md).
+Reports: [`reports/PHASE1_REPORT.md`](reports/PHASE1_REPORT.md), [`reports/PHASE1_5_REPORT.md`](reports/PHASE1_5_REPORT.md).
+Owner setup for real Codex runs: [`docs/OWNER_SETUP.md`](docs/OWNER_SETUP.md).
 
 ```
 ai-dev-company/
 ├── aidc                     # CLI wrapper: ./aidc <command>
-├── orchestrator/aidc/       # board (state + run log), policy (safety), codex_runner, cli
-├── orchestrator/tests/      # 19 unit/e2e tests (fake Codex binary, no network)
+├── orchestrator/aidc/       # board (state + run log), policy, sandbox (OS isolation), codex_runner, cli
+├── orchestrator/tests/      # 45 tests: board, dispatch, process-level integration, sandbox negative tests
+├── scripts/                 # owner-codex-setup, codex-e2e (real run), run-tests, scan-secrets
 ├── agents/                  # role prompts: manager.md, developer.md, qa.md
 ├── .codex/                  # native Codex multi-agent roles (developer, qa)
 ├── demo-app/                # disposable Node app: dashboard, task list, JSON API, node:test
 ├── runs/<run-id>/           # board.json, events.jsonl, plan.json, reports/, evidence/
-├── docs/                    # architecture, owner setup, safety, Claude integration
-└── reports/PHASE1_REPORT.md
+├── docs/                    # OWNER_SETUP, ISOLATION, SECURITY_FINDINGS, GITHUB_403, MANAGER_LOOP, CLAUDE_INTEGRATION
+└── reports/                 # PHASE1_REPORT.md, PHASE1_5_REPORT.md
 ```
 
 ## Quick start
@@ -30,9 +32,11 @@ ai-dev-company/
 # Option A — Codex agents (needs the owner's ChatGPT sign-in; refuses API-key auth)
 ./aidc dispatch --run my-run --max-tasks 4
 
-# Option B — any officially supported agent session drives the board by hand
+./aidc review   --run my-run --task dev-1       # manager acceptance gate (tests re-run in the OS sandbox)
+
+# Option B — a hand-driven agent session (NOT OS-sandboxed; write tasks need an explicit ack)
 ./aidc worktree --run my-run --task dev-1
-./aidc claim    --run my-run --task dev-1 --agent <name>
+./aidc claim    --run my-run --task dev-1 --agent <name> --unsandboxed-ack
 ./aidc complete --run my-run --task dev-1 --agent <name> --result pass --summary "..." --report-file r.md
 
 # Control
@@ -42,7 +46,8 @@ ai-dev-company/
 ./aidc metrics --run my-run
 ```
 
-Tests: `cd orchestrator && python3 -m unittest discover -s tests` and `cd demo-app && npm test`.
+Tests: `scripts/run-tests.sh` (orchestrator + demo app; fails if any security test is skipped).
+Run a command in the OS sandbox: `./aidc sandbox-exec --workdir demo-app -- npm test`.
 
 Requires Python 3.10+, Node 20+, git. No third-party packages.
 

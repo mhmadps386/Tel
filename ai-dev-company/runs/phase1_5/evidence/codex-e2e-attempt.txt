@@ -1,0 +1,2 @@
+Codex is not signed in with ChatGPT: run scripts/owner-codex-setup.sh
+exit=1
