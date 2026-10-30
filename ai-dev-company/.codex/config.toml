@@ -1,0 +1,21 @@
+# Codex project config for AI Dev Company Phase 1 (native multi-agent mode).
+# Loaded by Codex when this project is trusted. No credentials belong here.
+
+approval_policy = "on-request"   # agents ask; nothing sensitive is auto-approved
+sandbox_mode = "workspace-write" # writes confined to the workspace, network off
+
+[features]
+multi_agent = true
+
+[agents]
+max_threads = 2                  # one developer + one QA at most
+max_depth = 1                    # sub-agents may not spawn further agents
+job_max_runtime_seconds = 1800   # hard cap per delegated job
+
+[agents.developer]
+description = "Implements one scoped task in its worktree, adds tests, runs npm test, reports files changed."
+config_file = "agents/developer.toml"
+
+[agents.qa]
+description = "Independently reviews a finished change read-only, runs the test suite, reports bugs and a PASS/FAIL verdict."
+config_file = "agents/qa.toml"

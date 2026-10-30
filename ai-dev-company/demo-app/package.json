@@ -1,0 +1,12 @@
+{
+  "name": "aidc-demo-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Disposable demo app for AI Dev Company Phase 1. Not for deployment.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=20" }
+}

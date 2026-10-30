@@ -1,0 +1,6 @@
+.aidc-worktrees/
+__pycache__/
+*.pyc
+node_modules/
+runs/*/.lock
+runs/*/board.json.tmp

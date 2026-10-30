@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Thin wrapper: ./aidc <command> ...
+DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHONPATH="$DIR/orchestrator${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m aidc "$@"

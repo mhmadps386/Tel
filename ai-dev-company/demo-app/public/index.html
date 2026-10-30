@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1f2328; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { border: 1px solid #d0d7de; border-radius: 8px; padding: 1rem; }
+    .card .value { font-size: 1.8rem; font-weight: 600; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid #eaeef2; }
+    li.done span { text-decoration: line-through; color: #6e7781; }
+    form { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    input[type=text] { flex: 1; padding: .4rem; }
+  </style>
+</head>
+<body>
+  <h1>Task Dashboard</h1>
+  <section class="cards" id="summary">
+    <div class="card"><div>Total</div><div class="value" id="total">0</div></div>
+    <div class="card"><div>Open</div><div class="value" id="open">0</div></div>
+    <div class="card"><div>Done</div><div class="value" id="done">0</div></div>
+  </section>
+  <form id="new-task">
+    <input type="text" id="title" placeholder="New task" maxlength="200" required>
+    <button type="submit">Add</button>
+  </form>
+  <ul id="tasks"></ul>
+  <script>
+    const api = (path, opts = {}) => fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts })
+      .then((r) => (r.status === 204 ? null : r.json()));
+
+    async function render() {
+      const tasks = await api('/api/tasks');
+      document.getElementById('total').textContent = tasks.length;
+      document.getElementById('done').textContent = tasks.filter((t) => t.done).length;
+      document.getElementById('open').textContent = tasks.filter((t) => !t.done).length;
+      const list = document.getElementById('tasks');
+      list.replaceChildren(...tasks.map((t) => {
+        const li = document.createElement('li');
+        li.className = t.done ? 'done' : '';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = t.done;
+        box.onchange = () => api(`/api/tasks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ done: box.checked }) }).then(render);
+        const label = document.createElement('span');
+        label.textContent = t.title;
+        const del = document.createElement('button');
+        del.textContent = 'Delete';
+        del.onclick = () => api(`/api/tasks/${t.id}`, { method: 'DELETE' }).then(render);
+        li.append(box, label, del);
+        return li;
+      }));
+    }
+
+    document.getElementById('new-task').onsubmit = async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('title');
+      await api('/api/tasks', { method: 'POST', body: JSON.stringify({ title: input.value }) });
+      input.value = '';
+      render();
+    };
+    render();
+  </script>
+</body>
+</html>
