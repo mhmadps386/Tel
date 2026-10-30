@@ -1,5 +1,8 @@
 FROM python:3.13-slim
-RUN apt-get update && apt-get install -y --no-install-recommends bubblewrap && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends bubblewrap git nodejs npm ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /app/.tools && npm install --no-fund --no-audit --prefix /app/.tools @openai/codex@0.166.0
 COPY orchestrator /app/orchestrator
 COPY deploy/sandbox_probe.py /app/sandbox_probe.py
+WORKDIR /app
 CMD ["sh", "-c", "python3 /app/sandbox_probe.py; sleep 3600"]

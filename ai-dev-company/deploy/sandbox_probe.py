@@ -3,6 +3,7 @@ import ctypes
 import os
 import platform
 import subprocess
+import sys
 
 
 def out(*a):
@@ -42,3 +43,29 @@ for name, cmd in (
         out(name, "rc", p.returncode, (p.stdout + p.stderr).strip()[:300])
     except Exception as e:
         out(name, "error", e)
+
+# Codex's own sandbox, with the runner's hardened config, run from a scratch workspace.
+codex = "/app/.tools/node_modules/.bin/codex"
+work = "/srv/probe-work"
+os.makedirs(work, exist_ok=True)
+try:
+    p = subprocess.run([codex, "sandbox", "-c", 'sandbox_mode="workspace-write"',
+                        "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
+                        "-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+                        "-c", "sandbox_workspace_write.network_access=false", "--",
+                        "sh", "-c", "echo in > inside.txt; echo out > /srv/outside.txt; echo t > /tmp/codex-probe"],
+                       cwd=work, capture_output=True, text=True, timeout=60)
+    out("codex_sandbox", "rc", p.returncode, (p.stdout + p.stderr).strip()[:400].replace("\n", " | "))
+    out("codex_sandbox_result", "inside_written", os.path.exists(f"{work}/inside.txt"),
+        "outside_written", os.path.exists("/srv/outside.txt"), "tmp_written", os.path.exists("/tmp/codex-probe"))
+except Exception as e:
+    out("codex_sandbox", "error", e)
+
+# Full negative test suite (real bubblewrap + real Codex sandbox).
+env = dict(os.environ, AIDC_CODEX_BIN=codex, PYTHONPATH="/app/orchestrator")
+p = subprocess.run([sys.executable, "-m", "unittest", "tests.test_sandbox", "-v"], cwd="/app/orchestrator",
+                   capture_output=True, text=True, timeout=300, env=env)
+for line in (p.stdout + p.stderr).splitlines():
+    if " ... " in line or line.startswith(("Ran ", "OK", "FAILED")) or "Error" in line:
+        out("unittest", line[:300])
+out("DONE")
