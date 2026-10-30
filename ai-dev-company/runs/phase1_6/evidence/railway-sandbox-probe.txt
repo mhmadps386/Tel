@@ -1,0 +1,37 @@
+# Railway sandbox capability probe
+# project ai-dev-company-staging (7941a415-872f-4a18-849c-ca5809cbad4d), service sandbox-probe
+# deployment 572fa7d6-dd10-4ce8-91e6-cbea4c40687a, commit 8e42fd2, region us-west2, 2026-10-30T16:31:11Z
+# image: python:3.13-slim + bubblewrap (Debian) + @openai/codex@0.166.0 (deploy/Dockerfile.probe)
+# Raw lines from Railway deploy logs (filter "PROBE"), in emitted order:
+
+PROBE kernel 6.18.5+deb13-cloud-amd64
+PROBE Seccomp:	2
+PROBE NoNewPrivs:	0
+PROBE CapEff:	00000000800405fb
+PROBE /proc/sys/user/max_user_namespaces 1522607
+PROBE /proc/sys/kernel/unprivileged_userns_clone 1
+PROBE landlock_abi 7 errno 0
+PROBE unshare_user fail [Errno 13] Permission denied
+PROBE bwrap_full rc 1 bwrap: Creating new namespace failed: Permission denied
+PROBE bwrap_noproc rc 1 bwrap: Creating new namespace failed: Permission denied
+PROBE aidc_sandbox rc 0 False
+PROBE codex_sandbox rc 1 bwrap: Creating new namespace failed: Permission denied
+PROBE codex_sandbox_result inside_written False outside_written False tmp_written False
+PROBE unittest test_codex_read_only_blocks_workspace_writes ... ok
+PROBE unittest test_codex_workspace_write_blocks_outside_writes ... FAIL
+PROBE unittest test_* (13 SandboxTest tests) ... skipped 'bubblewrap sandbox unavailable on this host'
+PROBE unittest AssertionError: False is not true : bwrap: Creating new namespace failed: Permission denied
+PROBE unittest Ran 15 tests in 0.309s
+PROBE unittest FAILED (failures=1, skipped=13)
+PROBE DONE
+
+# Interpretation
+# - Kernel supports user namespaces (sysctls allow them), but the container runs under a
+#   seccomp filter (Seccomp: 2) and unshare(CLONE_NEWUSER) returns EPERM. Railway blocks namespace creation.
+# - bubblewrap cannot start, so neither the aidc sandbox nor Codex's Linux sandbox can run.
+#   Codex fails closed: the sandboxed command did not run at all (no file written anywhere).
+# - "codex_read_only ... ok" is vacuous: nothing ran, so nothing was written.
+# - Landlock ABI 7 is available (filesystem restriction without namespaces), but Codex 0.166 and
+#   aidc.sandbox both depend on bubblewrap; there is no supported Landlock-only mode to rely on.
+# Decision: Railway hosts the control panel + database only. Agent execution must run on a separate
+# worker host where these tests pass with zero skips. Codex is never started with danger-full-access.

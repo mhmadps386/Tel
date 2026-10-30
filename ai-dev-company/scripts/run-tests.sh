@@ -16,7 +16,18 @@ if grep -q "skipped" "$OUT/orchestrator-tests.txt" && [ -z "${AIDC_ALLOW_SKIPS:-
 fi
 (cd "$ROOT/demo-app" && npm test) > "$OUT/demo-app-tests.txt" 2>&1
 DEMO=$?
-echo "orchestrator exit=$ORCH; demo-app exit=$DEMO" | tee "$OUT/summary.txt"
+# Control panel + worker end-to-end (needs a Postgres where test databases can be created).
+E2E=0
+if [ -n "${AIDC_TEST_DATABASE_URL:-}" ]; then
+  (cd "$ROOT" && python3 -m unittest server.tests.test_e2e -v) > "$OUT/control-plane-e2e.txt" 2>&1
+  E2E=$?
+  if grep -q "skipped" "$OUT/control-plane-e2e.txt"; then E2E=1; fi
+else
+  echo "control-plane e2e NOT RUN (AIDC_TEST_DATABASE_URL unset)" > "$OUT/control-plane-e2e.txt"
+  [ -n "${AIDC_ALLOW_SKIPS:-}" ] || E2E=1
+fi
+echo "orchestrator exit=$ORCH; demo-app exit=$DEMO; control-plane-e2e exit=$E2E" | tee "$OUT/summary.txt"
 tail -3 "$OUT/orchestrator-tests.txt" | tee -a "$OUT/summary.txt"
 grep -E '^# (tests|pass|fail)' "$OUT/demo-app-tests.txt" | tee -a "$OUT/summary.txt"
-[ $ORCH = 0 ] && [ $DEMO = 0 ]
+tail -3 "$OUT/control-plane-e2e.txt" | tee -a "$OUT/summary.txt"
+[ $ORCH = 0 ] && [ $DEMO = 0 ] && [ $E2E = 0 ]

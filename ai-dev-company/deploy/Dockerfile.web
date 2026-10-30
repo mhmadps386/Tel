@@ -1,0 +1,10 @@
+# Control panel only. No Codex, no agent code, no sandbox needed: agents never run here.
+FROM python:3.13-slim
+RUN pip install --no-cache-dir "psycopg[binary]==3.2.3" \
+    && useradd --create-home --uid 10001 aidc
+WORKDIR /app
+COPY server /app/server
+RUN rm -rf /app/server/tests
+USER aidc
+ENV PYTHONUNBUFFERED=1
+CMD ["python", "-m", "server.app"]
