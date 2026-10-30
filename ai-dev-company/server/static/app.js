@@ -27,6 +27,11 @@ async function api(path, body) {
   return data;
 }
 
+// Label/value grid: every cell must be an element, or adjacent text merges into one grid item.
+function kv(...cells) {
+  return el('div', { class: 'kv' }, cells.map((c) => (c instanceof Node ? c : el('span', { text: String(c) }))));
+}
+
 function ago(ts) {
   const s = Math.max(0, Math.round(Date.now() / 1000 - new Date(ts).getTime() / 1000));
   return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)}m ago` : `${Math.round(s / 3600)}h ago`;
@@ -108,7 +113,7 @@ function workersView(s) {
     return el('li', {},
       el('div', { class: 'row' }, el('strong', { text: w.id }),
         el('span', { class: `pill ${w.online ? 'ok' : 'bad'}`, text: w.online ? 'online' : `offline (${Math.round(w.age_s)}s)` })),
-      el('div', { class: 'kv' },
+      kv(
         'Sandbox', el('span', { class: i.sandbox_ok ? 'ok' : 'bad', text: i.sandbox_ok ? 'OS sandbox OK' : `unavailable: ${i.sandbox_detail || ''}` }),
         'Codex auth', el('span', { class: i.auth_mode === 'chatgpt' ? 'ok' : 'bad', text: i.auth_mode || 'unknown' }),
         'Login lock', el('span', { text: i.forced_login_method || '—' }),
@@ -124,6 +129,10 @@ function workersView(s) {
         el('p', { class: 'muted', text: `Status: ${login.status || 'waiting'} · never share this code` }))
     : el('p', { class: 'muted', text: login.status ? `Last sign-in: ${login.status}` : '' });
   const tokenOut = el('pre', { hidden: true });
+  const tokens = (s.worker_tokens || []).filter((t) => !t.revoked).map((t) => el('div', { class: 'row' },
+    el('span', { text: `token #${t.id} "${t.name}"` }),
+    el('button', { class: 'ghost', text: 'Revoke', onclick: act(async () => {
+      if (confirm(`Revoke worker token "${t.name}"? Workers using it are disconnected.`)) await api(`/api/worker-tokens/${t.id}/revoke`, {}); }) })));
   return el('section', {}, el('h2', { text: 'Execution workers' }),
     items.length ? el('ul', { class: 'list' }, items) : el('p', { class: 'muted', text: 'No worker connected yet.' }),
     el('div', { class: 'row' },
@@ -131,7 +140,7 @@ function workersView(s) {
       el('button', { class: 'ghost', text: 'Create worker token', onclick: act(async () => {
         const r = await api('/api/worker-tokens', { name: prompt('Worker name', 'owner-worker') || 'worker' });
         tokenOut.hidden = false; tokenOut.textContent = `${r.token}\n\n${r.note}`; }) })),
-    loginBox, tokenOut);
+    loginBox, tokenOut, tokens.length ? el('div', {}, el('p', { class: 'muted', text: 'Active worker tokens' }), tokens) : null);
 }
 
 function submitView(s) {
@@ -200,7 +209,7 @@ function testsView(s) {
 function usageView(s) {
   const u = s.usage;
   return el('section', {}, el('h2', { text: 'Usage & cost' }),
-    el('div', { class: 'kv' },
+    kv(
       'Agent jobs', String(u.agent_jobs), 'Attempts', String(u.attempts), 'Failed jobs', String(u.failed_jobs),
       'Agent time (all)', `${Math.round(u.agent_seconds / 60)} min`, 'Agent time (24h)', `${Math.round(u.agent_seconds_24h / 60)} min`,
       'Paid API calls', String(u.paid_api_calls), 'Billing mode', 'ChatGPT subscription only',

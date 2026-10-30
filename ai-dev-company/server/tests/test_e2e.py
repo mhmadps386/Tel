@@ -375,6 +375,17 @@ class EndToEnd(unittest.TestCase):
         for needle in ("sk-should-be-stripped", self.token, "postgresql://", "password_hash", "scrypt$"):
             self.assertNotIn(needle, blob)
 
+    def test_10_revoked_token_is_rejected(self):
+        c = self.owner()
+        status, body = c.req("POST", "/api/worker-tokens", {"name": "to-revoke"})
+        token = body["token"]
+        hdr = {"Authorization": f"Bearer {token}", "X-Worker-Id": "rv"}
+        self.assertEqual(Client(self.port).req("POST", "/worker/heartbeat", {}, hdr)[0], 200)
+        tid = next(t["id"] for t in c.state()["worker_tokens"] if t["name"] == "to-revoke")
+        self.assertEqual(c.req("POST", f"/api/worker-tokens/{tid}/revoke", {})[0], 200)
+        self.assertEqual(Client(self.port).req("POST", "/worker/heartbeat", {}, hdr)[0], 401)
+        self.assertNotIn("token_hash", json.dumps(c.state()))
+
     def test_09_unsandboxed_worker_refuses_agent_work(self):
         c = self.owner()
         self.worker.kill()

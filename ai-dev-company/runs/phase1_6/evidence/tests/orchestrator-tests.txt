@@ -1,0 +1,74 @@
+test_cancel_and_halt (test_board.BoardTest.test_cancel_and_halt) ... ok
+test_dependencies_gate_readiness (test_board.BoardTest.test_dependencies_gate_readiness) ... ok
+test_event_log_and_metrics (test_board.BoardTest.test_event_log_and_metrics) ... ok
+test_halt_blocks_dispatch_until_resumed (test_board.BoardTest.test_halt_blocks_dispatch_until_resumed) ... ok
+test_only_owner_can_complete (test_board.BoardTest.test_only_owner_can_complete) ... ok
+test_recover_expired_lease (test_board.BoardTest.test_recover_expired_lease) ... ok
+test_retries_are_bounded_and_dependents_cancelled (test_board.BoardTest.test_retries_are_bounded_and_dependents_cancelled) ... ok
+test_validation (test_board.BoardTest.test_validation) ... ok
+test_crash_is_retried_once (test_dispatch.DispatchTest.test_crash_is_retried_once) ... ok
+test_developer_then_independent_qa (test_dispatch.DispatchTest.test_developer_then_independent_qa) ... ok
+test_qa_failure_is_recorded (test_dispatch.DispatchTest.test_qa_failure_is_recorded) ... ok
+test_refuses_api_key_auth (test_dispatch.DispatchTest.test_refuses_api_key_auth) ... ok
+test_refuses_when_not_logged_in (test_dispatch.DispatchTest.test_refuses_when_not_logged_in) ... ok
+test_timeout_kills_agent (test_dispatch.DispatchTest.test_timeout_kills_agent) ... ok
+test_usage_limit_halts_without_retry (test_dispatch.DispatchTest.test_usage_limit_halts_without_retry) ... ok
+test_command_never_bypasses_approvals (test_dispatch.PolicyTest.test_command_never_bypasses_approvals) ... ok
+test_dangerous_sandbox_rejected (test_dispatch.PolicyTest.test_dangerous_sandbox_rejected) ... ok
+test_paths_confined (test_dispatch.PolicyTest.test_paths_confined) ... ok
+test_usage_limit_detection (test_dispatch.PolicyTest.test_usage_limit_detection) ... ok
+test_cancel_running_task_from_another_process (test_integration.IntegrationTest.test_cancel_running_task_from_another_process) ... /usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=3 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=5 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_halt_stops_running_agent_and_resume_completes (test_integration.IntegrationTest.test_halt_stops_running_agent_and_resume_completes) ... /usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=3 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=5 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_isolation_violation_halts_run (test_integration.IntegrationTest.test_isolation_violation_halts_run) ... ok
+test_manager_review_gate (test_integration.IntegrationTest.test_manager_review_gate) ... ok
+test_manager_review_rejects_failed_qa (test_integration.IntegrationTest.test_manager_review_rejects_failed_qa) ... ok
+test_manual_developer_claim_requires_ack (test_integration.IntegrationTest.test_manual_developer_claim_requires_ack) ... ok
+test_max_tasks_stop_condition (test_integration.IntegrationTest.test_max_tasks_stop_condition) ... ok
+test_recovery_after_dispatcher_crash (test_integration.IntegrationTest.test_recovery_after_dispatcher_crash) ... /usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=3 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=5 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_retry_limit_is_enforced (test_integration.IntegrationTest.test_retry_limit_is_enforced) ... ok
+test_timeout_kills_whole_process_tree (test_integration.IntegrationTest.test_timeout_kills_whole_process_tree) ... /usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=3 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=5 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_usage_limit_stop_condition (test_integration.IntegrationTest.test_usage_limit_stop_condition) ... ok
+test_codex_read_only_blocks_workspace_writes (test_sandbox.CodexSandboxTest.test_codex_read_only_blocks_workspace_writes) ... ok
+test_codex_workspace_write_blocks_outside_writes (test_sandbox.CodexSandboxTest.test_codex_workspace_write_blocks_outside_writes) ... ok
+test_credentials_hidden (test_sandbox.SandboxTest.test_credentials_hidden) ... ok
+test_delete_outside_workspace_blocked (test_sandbox.SandboxTest.test_delete_outside_workspace_blocked) ... ok
+test_environment_scrubbed (test_sandbox.SandboxTest.test_environment_scrubbed) ... ok
+test_file_size_limit (test_sandbox.SandboxTest.test_file_size_limit) ... ok
+test_hidden_paths_are_read_only (test_sandbox.SandboxTest.test_hidden_paths_are_read_only) ... ok
+test_network_blocked (test_sandbox.SandboxTest.test_network_blocked) ... ok
+test_new_file_outside_workspace_blocked (test_sandbox.SandboxTest.test_new_file_outside_workspace_blocked) ... ok
+test_refuses_broad_writable_roots (test_sandbox.SandboxTest.test_refuses_broad_writable_roots) ... ok
+test_runs_unprivileged_with_private_pids (test_sandbox.SandboxTest.test_runs_unprivileged_with_private_pids) ... ok
+test_symlink_escape_blocked (test_sandbox.SandboxTest.test_symlink_escape_blocked) ... ok
+test_timeout_kills_sandbox (test_sandbox.SandboxTest.test_timeout_kills_sandbox) ... ok
+test_write_inside_workspace_allowed (test_sandbox.SandboxTest.test_write_inside_workspace_allowed) ... ok
+test_write_to_parent_project_blocked (test_sandbox.SandboxTest.test_write_to_parent_project_blocked) ... ok
+
+----------------------------------------------------------------------
+Ran 45 tests in 25.990s
+
+OK

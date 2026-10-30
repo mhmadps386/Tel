@@ -1,0 +1,9 @@
+# Railway restart / persistence check (aidc-web, deployment 9ebab4cf, 2026-10-30)
+before restart (authenticated /api/state summary):
+{"events": 9, "latest_event_id": 9, "kinds": ["login.failure", "login.success", "owner.initialised"], "loop": "paused", "projects": ["disposable-demo"]}
+restart-service issued via Railway API at ~16:52:30Z
+Railway deploy log: 'aidc control panel listening on :8080' at 16:46:13Z (first start) and 16:52:36Z (after restart)
+health after restart: HTTP 200
+after restart:
+{"events": 10, "latest_event_id": 10, "kinds": ["login.failure", "login.success", "owner.initialised"], "loop": "paused", "projects": ["disposable-demo"]}
+result: event ids continue (9 -> 10), owner row not re-initialised, loop state preserved (paused): state lives in Postgres, not the web container.

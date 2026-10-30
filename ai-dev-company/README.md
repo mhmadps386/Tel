@@ -1,11 +1,16 @@
-# AI Dev Company — Phase 1 (proof of concept)
+# AI Dev Company — Phase 1.6 (private staging)
 
 A manager agent breaks a requirement into tasks, hands them to a **developer** agent and an
 independent **QA** agent, tracks progress on a task board, and produces a run log and report.
 The demo is disposable and runs only on this machine: nothing is deployed and nothing touches production.
 
-Reports: [`reports/PHASE1_REPORT.md`](reports/PHASE1_REPORT.md), [`reports/PHASE1_5_REPORT.md`](reports/PHASE1_5_REPORT.md).
-Owner setup for real Codex runs: [`docs/OWNER_SETUP.md`](docs/OWNER_SETUP.md).
+Reports: [Phase 1](reports/PHASE1_REPORT.md), [Phase 1.5](reports/PHASE1_5_REPORT.md), [Phase 1.6](reports/PHASE1_6_REPORT.md).
+Private staging panel (Railway): https://aidc-web-staging.up.railway.app (owner login required).
+Connect an execution worker + Codex device sign-in: [`docs/WORKER_SETUP.md`](docs/WORKER_SETUP.md).
+
+Phase 1.6 layout: `server/` = control panel + AI Manager state machine (Railway, Postgres);
+`worker/` = execution worker (owner-controlled Linux host; agents run only here, in OS sandboxes);
+`deploy/` = Dockerfiles (web, sandbox probe).
 
 ```
 ai-dev-company/

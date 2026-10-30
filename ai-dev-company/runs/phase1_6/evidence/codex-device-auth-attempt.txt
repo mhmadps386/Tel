@@ -1,0 +1,26 @@
+# codex login --device-auth from the Claude Code cloud container (2026-10-30T16:55:39Z), throwaway CODEX_HOME
+
+Welcome to Codex [v0.166.0]
+OpenAI's command-line coding agent
+
+Follow these steps to sign in with ChatGPT using device code authorization:
+
+1. Open this link in your browser and sign in to your account
+   https://auth.openai.com/codex/device
+
+2. Enter this one-time code (expires in 15 minutes)
+   [one-time code redacted; it was never used and its polling client was stopped]
+
+Continue only if you started this login in Codex. If a website or another person gave you this code, cancel.
+
+exit=124
+auth.openai.com -> HTTP 403
+
+# Interpretation
+# - The official device-code flow is available: Codex 0.166.0 requested and received a one-time code from
+#   OpenAI (the container could reach the endpoint Codex uses for that step).
+# - The process was stopped after 40 s on purpose (exit 124): completing sign-in here would place ChatGPT
+#   credentials in an ephemeral, third-party cloud container, which cannot run as a persistent worker, and
+#   the browser-facing hosts (auth.openai.com, chatgpt.com) return 403 from this network.
+# - Whether device-code sign-in is enabled for the owner's specific account/workspace is only shown when the
+#   owner enters a code on OpenAI's page; that step is in docs/WORKER_SETUP.md.

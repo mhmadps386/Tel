@@ -1,0 +1,36 @@
+PASS  GET / serves login shell over HTTPS  status=200
+PASS  header Content-Security-Policy  default-src 'self'; script-src 'self'; style-src 'self'; img
+PASS  header Strict-Transport-Security  max-age=31536000
+PASS  header X-Frame-Options  DENY
+PASS  header X-Content-Type-Options  nosniff
+PASS  header Referrer-Policy  no-referrer
+PASS  header X-Robots-Tag  noindex, nofollow
+PASS  no inline script in HTML  
+PASS  /healthz reveals nothing but ok  {"ok": true}
+PASS  anonymous GET /api/state refused  status=401
+PASS  anonymous POST /api/missions refused  status=401
+PASS  anonymous POST /api/control refused  status=401
+PASS  anonymous POST /api/approvals/1 refused  status=401
+PASS  anonymous POST /api/worker-tokens refused  status=401
+PASS  worker endpoint /worker/heartbeat without token refused  status=401
+PASS  worker endpoint /worker/heartbeat with forged token refused  status=401
+PASS  worker endpoint /worker/claim without token refused  status=401
+PASS  worker endpoint /worker/claim with forged token refused  status=401
+PASS  worker endpoint /worker/jobs/1/result without token refused  status=401
+PASS  worker endpoint /worker/jobs/1/result with forged token refused  status=401
+PASS  worker endpoint /worker/login without token refused  status=401
+PASS  worker endpoint /worker/login with forged token refused  status=401
+PASS  wrong password refused  status=403
+PASS  unknown path 404 without detail  
+PASS  plain HTTP redirected to HTTPS  https://aidc-web-staging.up.railway.app/healthz
+PASS  initial password signs in  
+PASS  session cookie HttpOnly+Secure+SameSite=Strict  
+PASS  must change initial password  
+PASS  panel locked until password changed  status=403
+PASS  CSRF token enforced  status=403
+PASS  state contains no secrets  
+PASS  loop starts paused (no unattended execution)  paused
+PASS  estop inactive  
+PASS  logout ends the session  
+
+34/34 checks passed

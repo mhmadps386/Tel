@@ -1,0 +1,15 @@
+test_01_security_surface (server.tests.test_e2e.EndToEnd.test_01_security_surface) ... ok
+test_02_worker_and_device_login (server.tests.test_e2e.EndToEnd.test_02_worker_and_device_login) ... ok
+test_03_full_loop_with_correction_round (server.tests.test_e2e.EndToEnd.test_03_full_loop_with_correction_round) ... ok
+test_04_cancel_kills_agent (server.tests.test_e2e.EndToEnd.test_04_cancel_kills_agent) ... ok
+test_05_emergency_stop (server.tests.test_e2e.EndToEnd.test_05_emergency_stop) ... ok
+test_06_worker_crash_recovery (server.tests.test_e2e.EndToEnd.test_06_worker_crash_recovery) ... ok
+test_07_server_restart_keeps_state (server.tests.test_e2e.EndToEnd.test_07_server_restart_keeps_state) ... ok
+test_08_secrets_never_reach_the_browser (server.tests.test_e2e.EndToEnd.test_08_secrets_never_reach_the_browser) ... ok
+test_09_unsandboxed_worker_refuses_agent_work (server.tests.test_e2e.EndToEnd.test_09_unsandboxed_worker_refuses_agent_work) ... ok
+test_10_revoked_token_is_rejected (server.tests.test_e2e.EndToEnd.test_10_revoked_token_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 51.915s
+
+OK

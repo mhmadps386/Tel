@@ -1,0 +1,162 @@
+
+> aidc-demo-app@0.1.0 test
+> node --test test/*.test.js
+
+TAP version 13
+# Subtest: task API
+    # Subtest: health check
+    ok 1 - health check
+      ---
+      duration_ms: 37.049227
+      type: 'test'
+      ...
+    # Subtest: creates and lists tasks
+    ok 2 - creates and lists tasks
+      ---
+      duration_ms: 10.157365
+      type: 'test'
+      ...
+    # Subtest: rejects invalid titles
+    ok 3 - rejects invalid titles
+      ---
+      duration_ms: 16.275309
+      type: 'test'
+      ...
+    # Subtest: rejects malformed JSON
+    ok 4 - rejects malformed JSON
+      ---
+      duration_ms: 3.645489
+      type: 'test'
+      ...
+    # Subtest: updates and deletes a task
+    ok 5 - updates and deletes a task
+      ---
+      duration_ms: 12.693264
+      type: 'test'
+      ...
+    # Subtest: serves the dashboard
+    ok 6 - serves the dashboard
+      ---
+      duration_ms: 16.427558
+      type: 'test'
+      ...
+    1..6
+ok 1 - task API
+  ---
+  duration_ms: 109.027964
+  type: 'test'
+  ...
+# Subtest: task priorities
+    # Subtest: defaults priority to medium on create
+    ok 1 - defaults priority to medium on create
+      ---
+      duration_ms: 40.376677
+      type: 'test'
+      ...
+    # Subtest: accepts each valid priority on create
+    ok 2 - accepts each valid priority on create
+      ---
+      duration_ms: 9.02869
+      type: 'test'
+      ...
+    # Subtest: rejects invalid priority on create
+    ok 3 - rejects invalid priority on create
+      ---
+      duration_ms: 15.681499
+      type: 'test'
+      ...
+    # Subtest: updates priority via PATCH
+    ok 4 - updates priority via PATCH
+      ---
+      duration_ms: 4.334339
+      type: 'test'
+      ...
+    # Subtest: rejects invalid priority on PATCH without partial update
+    ok 5 - rejects invalid priority on PATCH without partial update
+      ---
+      duration_ms: 10.870275
+      type: 'test'
+      ...
+    1..5
+ok 2 - task priorities
+  ---
+  duration_ms: 90.094795
+  type: 'test'
+  ...
+# Subtest: task list filters
+    # Subtest: no filters returns all tasks
+    ok 1 - no filters returns all tasks
+      ---
+      duration_ms: 1.058124
+      type: 'test'
+      ...
+    # Subtest: filters by status
+    ok 2 - filters by status
+      ---
+      duration_ms: 3.315663
+      type: 'test'
+      ...
+    # Subtest: filters by priority
+    ok 3 - filters by priority
+      ---
+      duration_ms: 3.183305
+      type: 'test'
+      ...
+    # Subtest: combines status and priority filters
+    ok 4 - combines status and priority filters
+      ---
+      duration_ms: 7.101256
+      type: 'test'
+      ...
+    # Subtest: rejects unknown filter values with 400
+    ok 5 - rejects unknown filter values with 400
+      ---
+      duration_ms: 6.497736
+      type: 'test'
+      ...
+    1..5
+ok 3 - task list filters
+  ---
+  duration_ms: 45.434223
+  type: 'test'
+  ...
+# Subtest: GET /api/stats
+    # Subtest: returns all keys as zero when empty
+    ok 1 - returns all keys as zero when empty
+      ---
+      duration_ms: 2.787071
+      type: 'test'
+      ...
+    # Subtest: counts tasks by status and priority and tracks changes
+    ok 2 - counts tasks by status and priority and tracks changes
+      ---
+      duration_ms: 9.953826
+      type: 'test'
+      ...
+    1..2
+ok 4 - GET /api/stats
+  ---
+  duration_ms: 13.732569
+  type: 'test'
+  ...
+# Subtest: dashboard wires priorities and stats
+ok 5 - dashboard wires priorities and stats
+  ---
+  duration_ms: 6.446575
+  type: 'test'
+  ...
+# Subtest: TaskStore unit rules
+ok 6 - TaskStore unit rules
+  ---
+  duration_ms: 0.769328
+  type: 'test'
+  ...
+1..6
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 211.949958

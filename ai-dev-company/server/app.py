@@ -174,6 +174,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, {"ok": True})
             if path == "/api/control":
                 return self.send(200, control(c, str(data.get("action", "")), data))
+            m = re.fullmatch(r"/api/worker-tokens/(\d+)/revoke", path)
+            if m:
+                c.execute("UPDATE worker_tokens SET revoked=TRUE WHERE id=%s", (int(m.group(1)),))
+                db.event(c, "owner", "worker_token.revoked", token_id=int(m.group(1)))
+                return self.send(200, {"ok": True})
             if path == "/api/worker-tokens":
                 token = auth.create_worker_token(c, str(data.get("name") or "worker"))
                 return self.send(200, {"token": token, "note": "shown once; store it on the worker host only"})
@@ -304,6 +309,7 @@ def state(c, csrf, must_change):
         "csrf": csrf, "must_change_password": must_change,
         "loop": db.get_setting(c, "loop"), "estop": db.get_setting(c, "estop"), "login": login,
         "projects": c.execute("SELECT id, name, description, disposable FROM projects ORDER BY id").fetchall(),
+        "worker_tokens": c.execute("SELECT id, name, created_at, revoked FROM worker_tokens ORDER BY id").fetchall(),
         "workers": workers, "missions": missions, "jobs": jobs, "events": events, "approvals": approvals,
         "usage": {**usage, "paid_api_calls": 0,
                   "infrastructure": {"railway_services": ["aidc-web", "Postgres"],
