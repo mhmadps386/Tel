@@ -1,0 +1,400 @@
+From 54ed2c901d17a1ea8fe3218c7eff0b23534fa053 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 30 Oct 2026 14:03:53 +0000
+Subject: [PATCH] dev-1: task priorities, filtering and /api/stats
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Tit5njMZ6dFfma4Y5m1Qvh
+---
+ ai-dev-company/demo-app/public/index.html     |  36 +++-
+ ai-dev-company/demo-app/src/app.js            |  13 +-
+ ai-dev-company/demo-app/src/store.js          |  57 +++++--
+ ai-dev-company/demo-app/test/priority.test.js | 157 ++++++++++++++++++
+ 4 files changed, 241 insertions(+), 22 deletions(-)
+ create mode 100644 ai-dev-company/demo-app/test/priority.test.js
+
+diff --git a/ai-dev-company/demo-app/public/index.html b/ai-dev-company/demo-app/public/index.html
+index b9d7738..8fe4aae 100644
+--- a/ai-dev-company/demo-app/public/index.html
++++ b/ai-dev-company/demo-app/public/index.html
+@@ -11,9 +11,14 @@
+     .card .value { font-size: 1.8rem; font-weight: 600; }
+     ul { list-style: none; padding: 0; }
+     li { display: flex; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid #eaeef2; }
+-    li.done span { text-decoration: line-through; color: #6e7781; }
++    li.done span.title { text-decoration: line-through; color: #6e7781; }
+     form { display: flex; gap: .5rem; margin-bottom: 1rem; }
+     input[type=text] { flex: 1; padding: .4rem; }
++    .priority { font-size: .75rem; padding: .1rem .5rem; border-radius: 999px; border: 1px solid #d0d7de; text-transform: capitalize; }
++    .priority-high { background: #ffebe9; border-color: #ff8182; }
++    .priority-medium { background: #fff8c5; border-color: #d4a72c; }
++    .priority-low { background: #ddf4ff; border-color: #54aeff; }
++    li span.title { flex: 1; }
+   </style>
+ </head>
+ <body>
+@@ -22,9 +27,17 @@
+     <div class="card"><div>Total</div><div class="value" id="total">0</div></div>
+     <div class="card"><div>Open</div><div class="value" id="open">0</div></div>
+     <div class="card"><div>Done</div><div class="value" id="done">0</div></div>
++    <div class="card"><div>High priority</div><div class="value" id="prio-high">0</div></div>
++    <div class="card"><div>Medium priority</div><div class="value" id="prio-medium">0</div></div>
++    <div class="card"><div>Low priority</div><div class="value" id="prio-low">0</div></div>
+   </section>
+   <form id="new-task">
+     <input type="text" id="title" placeholder="New task" maxlength="200" required>
++    <select id="priority" aria-label="Priority">
++      <option value="low">Low</option>
++      <option value="medium" selected>Medium</option>
++      <option value="high">High</option>
++    </select>
+     <button type="submit">Add</button>
+   </form>
+   <ul id="tasks"></ul>
+@@ -33,10 +46,13 @@
+       .then((r) => (r.status === 204 ? null : r.json()));
+ 
+     async function render() {
+-      const tasks = await api('/api/tasks');
+-      document.getElementById('total').textContent = tasks.length;
+-      document.getElementById('done').textContent = tasks.filter((t) => t.done).length;
+-      document.getElementById('open').textContent = tasks.filter((t) => !t.done).length;
++      const [tasks, stats] = await Promise.all([api('/api/tasks'), api('/api/stats')]);
++      document.getElementById('total').textContent = stats.total;
++      document.getElementById('open').textContent = stats.open;
++      document.getElementById('done').textContent = stats.done;
++      for (const p of ['high', 'medium', 'low']) {
++        document.getElementById(`prio-${p}`).textContent = stats.byPriority[p];
++      }
+       const list = document.getElementById('tasks');
+       list.replaceChildren(...tasks.map((t) => {
+         const li = document.createElement('li');
+@@ -46,11 +62,15 @@
+         box.checked = t.done;
+         box.onchange = () => api(`/api/tasks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ done: box.checked }) }).then(render);
+         const label = document.createElement('span');
++        label.className = 'title';
+         label.textContent = t.title;
++        const prio = document.createElement('span');
++        prio.className = `priority priority-${t.priority}`;
++        prio.textContent = t.priority;
+         const del = document.createElement('button');
+         del.textContent = 'Delete';
+         del.onclick = () => api(`/api/tasks/${t.id}`, { method: 'DELETE' }).then(render);
+-        li.append(box, label, del);
++        li.append(box, label, prio, del);
+         return li;
+       }));
+     }
+@@ -58,8 +78,10 @@
+     document.getElementById('new-task').onsubmit = async (e) => {
+       e.preventDefault();
+       const input = document.getElementById('title');
+-      await api('/api/tasks', { method: 'POST', body: JSON.stringify({ title: input.value }) });
++      const priority = document.getElementById('priority');
++      await api('/api/tasks', { method: 'POST', body: JSON.stringify({ title: input.value, priority: priority.value }) });
+       input.value = '';
++      priority.value = 'medium';
+       render();
+     };
+     render();
+diff --git a/ai-dev-company/demo-app/src/app.js b/ai-dev-company/demo-app/src/app.js
+index e302786..8d5afdd 100644
+--- a/ai-dev-company/demo-app/src/app.js
++++ b/ai-dev-company/demo-app/src/app.js
+@@ -37,6 +37,14 @@ function readJson(req) {
+   });
+ }
+ 
++function readFilters(searchParams) {
++  const filters = {};
++  for (const key of ['status', 'priority']) {
++    if (searchParams.has(key)) filters[key] = searchParams.get(key);
++  }
++  return filters;
++}
++
+ function createApp(store = new TaskStore()) {
+   return async function handler(req, res) {
+     const url = new URL(req.url, 'http://localhost');
+@@ -47,7 +55,10 @@ function createApp(store = new TaskStore()) {
+         return sendJson(res, 200, { status: 'ok' });
+       }
+       if (req.method === 'GET' && url.pathname === '/api/tasks') {
+-        return sendJson(res, 200, store.list());
++        return sendJson(res, 200, store.list(readFilters(url.searchParams)));
++      }
++      if (req.method === 'GET' && url.pathname === '/api/stats') {
++        return sendJson(res, 200, store.stats());
+       }
+       if (req.method === 'POST' && url.pathname === '/api/tasks') {
+         const body = await readJson(req);
+diff --git a/ai-dev-company/demo-app/src/store.js b/ai-dev-company/demo-app/src/store.js
+index 9d450f5..a45d8c9 100644
+--- a/ai-dev-company/demo-app/src/store.js
++++ b/ai-dev-company/demo-app/src/store.js
+@@ -1,31 +1,60 @@
+ 'use strict';
+ 
+ // In-memory task store. Disposable: no database, nothing persisted.
++const PRIORITIES = ['low', 'medium', 'high'];
++const STATUSES = ['open', 'done'];
++const DEFAULT_PRIORITY = 'medium';
++
++function validatePriority(priority) {
++  if (!PRIORITIES.includes(priority)) {
++    throw new ValidationError(`priority must be one of: ${PRIORITIES.join(', ')}`);
++  }
++}
++
+ class TaskStore {
+   constructor() {
+     this.tasks = new Map();
+     this.nextId = 1;
+   }
+ 
+-  list() {
+-    return [...this.tasks.values()];
++  list(filters = {}) {
++    const { status, priority } = filters;
++    if (status !== undefined && !STATUSES.includes(status)) {
++      throw new ValidationError(`status must be one of: ${STATUSES.join(', ')}`);
++    }
++    if (priority !== undefined) validatePriority(priority);
++    return [...this.tasks.values()].filter((task) =>
++      (status === undefined || task.done === (status === 'done')) &&
++      (priority === undefined || task.priority === priority));
++  }
++
++  stats() {
++    const stats = { total: 0, open: 0, done: 0, byPriority: { low: 0, medium: 0, high: 0 } };
++    for (const task of this.tasks.values()) {
++      stats.total += 1;
++      stats[task.done ? 'done' : 'open'] += 1;
++      stats.byPriority[task.priority] += 1;
++    }
++    return stats;
+   }
+ 
+   get(id) {
+     return this.tasks.get(id) || null;
+   }
+ 
+-  create({ title }) {
++  create({ title, priority = DEFAULT_PRIORITY }) {
+     if (typeof title !== 'string' || title.trim() === '') {
+       throw new ValidationError('title must be a non-empty string');
+     }
+     if (title.length > 200) {
+       throw new ValidationError('title must be at most 200 characters');
+     }
++    validatePriority(priority);
+     const task = {
+       id: this.nextId++,
+       title: title.trim(),
+       done: false,
++      priority,
+       createdAt: new Date().toISOString(),
+     };
+     this.tasks.set(task.id, task);
+@@ -35,18 +64,18 @@ class TaskStore {
+   update(id, changes) {
+     const task = this.get(id);
+     if (!task) return null;
+-    if ('title' in changes) {
+-      if (typeof changes.title !== 'string' || changes.title.trim() === '') {
+-        throw new ValidationError('title must be a non-empty string');
+-      }
+-      task.title = changes.title.trim();
++    // Validate every field before mutating so a rejected PATCH changes nothing.
++    if ('title' in changes &&
++        (typeof changes.title !== 'string' || changes.title.trim() === '')) {
++      throw new ValidationError('title must be a non-empty string');
+     }
+-    if ('done' in changes) {
+-      if (typeof changes.done !== 'boolean') {
+-        throw new ValidationError('done must be a boolean');
+-      }
+-      task.done = changes.done;
++    if ('done' in changes && typeof changes.done !== 'boolean') {
++      throw new ValidationError('done must be a boolean');
+     }
++    if ('priority' in changes) validatePriority(changes.priority);
++    if ('title' in changes) task.title = changes.title.trim();
++    if ('done' in changes) task.done = changes.done;
++    if ('priority' in changes) task.priority = changes.priority;
+     return task;
+   }
+ 
+@@ -57,4 +86,4 @@ class TaskStore {
+ 
+ class ValidationError extends Error {}
+ 
+-module.exports = { TaskStore, ValidationError };
++module.exports = { TaskStore, ValidationError, PRIORITIES, STATUSES };
+diff --git a/ai-dev-company/demo-app/test/priority.test.js b/ai-dev-company/demo-app/test/priority.test.js
+new file mode 100644
+index 0000000..f6996c9
+--- /dev/null
++++ b/ai-dev-company/demo-app/test/priority.test.js
+@@ -0,0 +1,157 @@
++'use strict';
++
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const { startServer } = require('./helpers');
++const { TaskStore, ValidationError } = require('../src/store');
++
++test('task priorities', async (t) => {
++  const app = await startServer();
++  t.after(app.close);
++
++  await t.test('defaults priority to medium on create', async () => {
++    const res = await app.request('POST', '/api/tasks', { title: 'Default' });
++    assert.equal(res.status, 201);
++    assert.equal(res.body.priority, 'medium');
++  });
++
++  await t.test('accepts each valid priority on create', async () => {
++    for (const priority of ['low', 'medium', 'high']) {
++      const res = await app.request('POST', '/api/tasks', { title: `P ${priority}`, priority });
++      assert.equal(res.status, 201);
++      assert.equal(res.body.priority, priority);
++    }
++  });
++
++  await t.test('rejects invalid priority on create', async () => {
++    for (const priority of ['urgent', 'HIGH', '', null, 3, ['high']]) {
++      const res = await app.request('POST', '/api/tasks', { title: 'Bad', priority });
++      assert.equal(res.status, 400, `priority ${JSON.stringify(priority)} should be rejected`);
++      assert.match(res.body.error, /priority/);
++    }
++  });
++
++  await t.test('updates priority via PATCH', async () => {
++    const { body: task } = await app.request('POST', '/api/tasks', { title: 'Change me' });
++    const res = await app.request('PATCH', `/api/tasks/${task.id}`, { priority: 'high' });
++    assert.equal(res.status, 200);
++    assert.equal(res.body.priority, 'high');
++  });
++
++  await t.test('rejects invalid priority on PATCH without partial update', async () => {
++    const { body: task } = await app.request('POST', '/api/tasks', { title: 'Keep me', priority: 'low' });
++    for (const priority of ['critical', null, 1]) {
++      const res = await app.request('PATCH', `/api/tasks/${task.id}`, { title: 'Changed', priority });
++      assert.equal(res.status, 400);
++    }
++    const list = await app.request('GET', '/api/tasks');
++    const stored = list.body.find((x) => x.id === task.id);
++    assert.equal(stored.priority, 'low');
++    assert.equal(stored.title, 'Keep me');
++  });
++});
++
++test('task list filters', async (t) => {
++  const app = await startServer();
++  t.after(app.close);
++
++  const make = async (title, priority, done) => {
++    const { body } = await app.request('POST', '/api/tasks', { title, priority });
++    if (done) await app.request('PATCH', `/api/tasks/${body.id}`, { done: true });
++    return body.id;
++  };
++  const ids = {
++    lowOpen: await make('a', 'low', false),
++    lowDone: await make('b', 'low', true),
++    medOpen: await make('c', 'medium', false),
++    highDone: await make('d', 'high', true),
++    highOpen: await make('e', 'high', false),
++  };
++  const idsOf = (res) => res.body.map((x) => x.id).sort((a, b) => a - b);
++
++  await t.test('no filters returns all tasks', async () => {
++    const res = await app.request('GET', '/api/tasks');
++    assert.equal(res.status, 200);
++    assert.equal(res.body.length, 5);
++  });
++
++  await t.test('filters by status', async () => {
++    const open = await app.request('GET', '/api/tasks?status=open');
++    assert.equal(open.status, 200);
++    assert.deepEqual(idsOf(open), [ids.lowOpen, ids.medOpen, ids.highOpen]);
++    const done = await app.request('GET', '/api/tasks?status=done');
++    assert.deepEqual(idsOf(done), [ids.lowDone, ids.highDone]);
++  });
++
++  await t.test('filters by priority', async () => {
++    assert.deepEqual(idsOf(await app.request('GET', '/api/tasks?priority=low')), [ids.lowOpen, ids.lowDone]);
++    assert.deepEqual(idsOf(await app.request('GET', '/api/tasks?priority=medium')), [ids.medOpen]);
++    assert.deepEqual(idsOf(await app.request('GET', '/api/tasks?priority=high')), [ids.highDone, ids.highOpen]);
++  });
++
++  await t.test('combines status and priority filters', async () => {
++    assert.deepEqual(idsOf(await app.request('GET', '/api/tasks?status=done&priority=high')), [ids.highDone]);
++    assert.deepEqual(idsOf(await app.request('GET', '/api/tasks?priority=low&status=open')), [ids.lowOpen]);
++    const none = await app.request('GET', '/api/tasks?status=done&priority=medium');
++    assert.equal(none.status, 200);
++    assert.deepEqual(none.body, []);
++  });
++
++  await t.test('rejects unknown filter values with 400', async () => {
++    for (const query of ['status=closed', 'status=', 'status=OPEN', 'priority=urgent',
++      'priority=', 'status=open&priority=nope', 'status=nope&priority=low']) {
++      const res = await app.request('GET', `/api/tasks?${query}`);
++      assert.equal(res.status, 400, `?${query} should be rejected`);
++      assert.ok(res.body.error);
++    }
++  });
++});
++
++test('GET /api/stats', async (t) => {
++  const app = await startServer();
++  t.after(app.close);
++
++  await t.test('returns all keys as zero when empty', async () => {
++    const res = await app.request('GET', '/api/stats');
++    assert.equal(res.status, 200);
++    assert.deepEqual(res.body, { total: 0, open: 0, done: 0, byPriority: { low: 0, medium: 0, high: 0 } });
++  });
++
++  await t.test('counts tasks by status and priority and tracks changes', async () => {
++    const a = (await app.request('POST', '/api/tasks', { title: 'a', priority: 'high' })).body;
++    await app.request('POST', '/api/tasks', { title: 'b' });
++    const c = (await app.request('POST', '/api/tasks', { title: 'c', priority: 'high' })).body;
++    await app.request('PATCH', `/api/tasks/${a.id}`, { done: true });
++
++    let res = await app.request('GET', '/api/stats');
++    assert.deepEqual(res.body, { total: 3, open: 2, done: 1, byPriority: { low: 0, medium: 1, high: 2 } });
++
++    await app.request('PATCH', `/api/tasks/${c.id}`, { priority: 'low' });
++    await app.request('DELETE', `/api/tasks/${a.id}`);
++    res = await app.request('GET', '/api/stats');
++    assert.deepEqual(res.body, { total: 2, open: 2, done: 0, byPriority: { low: 1, medium: 1, high: 0 } });
++    for (const v of [res.body.total, res.body.open, res.body.done, ...Object.values(res.body.byPriority)]) {
++      assert.ok(Number.isInteger(v));
++    }
++  });
++});
++
++test('dashboard wires priorities and stats', async (t) => {
++  const app = await startServer();
++  t.after(app.close);
++  const html = await (await fetch(app.base + '/')).text();
++  assert.match(html, /\/api\/stats/);
++  assert.match(html, /<select id="priority"/);
++  for (const p of ['low', 'medium', 'high']) assert.match(html, new RegExp(`<option value="${p}"`));
++  assert.match(html, /priority-\$\{t\.priority\}/);
++});
++
++test('TaskStore unit rules', () => {
++  const store = new TaskStore();
++  assert.equal(store.create({ title: 'x' }).priority, 'medium');
++  assert.throws(() => store.create({ title: 'x', priority: 'bogus' }), ValidationError);
++  assert.throws(() => store.list({ status: 'bogus' }), ValidationError);
++  assert.throws(() => store.list({ priority: 'bogus' }), ValidationError);
++  assert.equal(store.list().length, 1);
++  assert.deepEqual(store.stats(), { total: 1, open: 1, done: 0, byPriority: { low: 0, medium: 1, high: 0 } });
++});
+-- 
+2.43.0
+

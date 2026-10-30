@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-10-30T14:02:39+00:00",
+  "goal": "Add task priorities, filtering and a stats endpoint to the demo app, shown on the dashboard, with tests; independently QA it.",
+  "halted": null,
+  "run_id": "run-phase1-demo",
+  "tasks": {
+    "dev-1": {
+      "agent": "claude-developer",
+      "attempts": 1,
+      "branch": null,
+      "depends_on": [],
+      "duration_s": 69.5,
+      "durations_s": [
+        69.5
+      ],
+      "errors": [],
+      "finished_at": "2026-10-30T14:04:05+00:00",
+      "id": "dev-1",
+      "lease_expires": null,
+      "max_attempts": 2,
+      "report": "reports/dev-1.md",
+      "result": "pass",
+      "role": "developer",
+      "spec": "In ai-dev-company/demo-app:\n1. Tasks get a `priority` field: one of \"low\", \"medium\", \"high\"; default \"medium\" on create. Reject any other value with HTTP 400 on create (POST /api/tasks) and update (PATCH /api/tasks/:id).\n2. GET /api/tasks accepts optional query filters `status` (\"open\" | \"done\") and `priority` (low|medium|high), combinable. Unknown filter values return 400. No filters returns all tasks (existing behaviour).\n3. New endpoint GET /api/stats returns {\"total\", \"open\", \"done\", \"byPriority\": {\"low\", \"medium\", \"high\"}} (counts, all integers, all keys always present).\n4. Dashboard (public/index.html): summary cards come from /api/stats; a priority selector when adding a task; each task shows its priority.\n5. Add node:test coverage for every rule above. All existing tests must keep passing (`npm test`).",
+      "started_at": "2026-10-30T14:02:56+00:00",
+      "status": "done",
+      "summary": "Added task priorities, status/priority filters, GET /api/stats and dashboard updates; npm test 24/24 pass.",
+      "timeout_s": 1800,
+      "title": "Task priorities, filtering and /api/stats"
+    },
+    "qa-1": {
+      "agent": "claude-qa",
+      "attempts": 1,
+      "branch": null,
+      "depends_on": [
+        "dev-1"
+      ],
+      "duration_s": 76.9,
+      "durations_s": [
+        76.9
+      ],
+      "errors": [],
+      "finished_at": "2026-10-30T14:06:02+00:00",
+      "id": "qa-1",
+      "lease_expires": null,
+      "max_attempts": 2,
+      "report": "reports/qa-1.md",
+      "result": "pass",
+      "role": "qa",
+      "spec": "Review the dev-1 change against its spec (priority field with validation and default, status/priority filters with 400 on bad values, GET /api/stats shape, dashboard wiring, tests). Run `npm test` in ai-dev-company/demo-app and record exact counts. Probe edge cases (case sensitivity, empty filter values, PATCH with invalid priority, stats after deletes) by reading code and, if useful, by running throwaway scripts outside the repo. Report every bug with file:line and severity. Do not modify repository files.",
+      "started_at": "2026-10-30T14:04:45+00:00",
+      "status": "done",
+      "summary": "dev-1 meets all 5 spec requirements; 24/24 tests pass, pre-existing api.test.js 7/7, no high/medium bugs (low: duplicate query params only first validated)",
+      "timeout_s": 1200,
+      "title": "Independent QA of dev-1"
+    }
+  }
+}

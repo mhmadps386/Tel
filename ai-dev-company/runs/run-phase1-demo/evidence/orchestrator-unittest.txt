@@ -1,0 +1,24 @@
+test_cancel_and_halt (test_board.BoardTest.test_cancel_and_halt) ... ok
+test_dependencies_gate_readiness (test_board.BoardTest.test_dependencies_gate_readiness) ... ok
+test_event_log_and_metrics (test_board.BoardTest.test_event_log_and_metrics) ... ok
+test_halt_blocks_dispatch_until_resumed (test_board.BoardTest.test_halt_blocks_dispatch_until_resumed) ... ok
+test_only_owner_can_complete (test_board.BoardTest.test_only_owner_can_complete) ... ok
+test_recover_expired_lease (test_board.BoardTest.test_recover_expired_lease) ... ok
+test_retries_are_bounded_and_dependents_cancelled (test_board.BoardTest.test_retries_are_bounded_and_dependents_cancelled) ... ok
+test_validation (test_board.BoardTest.test_validation) ... ok
+test_crash_is_retried_once (test_dispatch.DispatchTest.test_crash_is_retried_once) ... ok
+test_developer_then_independent_qa (test_dispatch.DispatchTest.test_developer_then_independent_qa) ... ok
+test_qa_failure_is_recorded (test_dispatch.DispatchTest.test_qa_failure_is_recorded) ... ok
+test_refuses_api_key_auth (test_dispatch.DispatchTest.test_refuses_api_key_auth) ... ok
+test_refuses_when_not_logged_in (test_dispatch.DispatchTest.test_refuses_when_not_logged_in) ... ok
+test_timeout_kills_agent (test_dispatch.DispatchTest.test_timeout_kills_agent) ... ok
+test_usage_limit_halts_without_retry (test_dispatch.DispatchTest.test_usage_limit_halts_without_retry) ... ok
+test_command_never_bypasses_approvals (test_dispatch.PolicyTest.test_command_never_bypasses_approvals) ... ok
+test_dangerous_sandbox_rejected (test_dispatch.PolicyTest.test_dangerous_sandbox_rejected) ... ok
+test_paths_confined (test_dispatch.PolicyTest.test_paths_confined) ... ok
+test_usage_limit_detection (test_dispatch.PolicyTest.test_usage_limit_detection) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 2.580s
+
+OK
