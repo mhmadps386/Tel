@@ -37,6 +37,14 @@ function readJson(req) {
   });
 }
 
+function readFilters(searchParams) {
+  const filters = {};
+  for (const key of ['status', 'priority']) {
+    if (searchParams.has(key)) filters[key] = searchParams.get(key);
+  }
+  return filters;
+}
+
 function createApp(store = new TaskStore()) {
   return async function handler(req, res) {
     const url = new URL(req.url, 'http://localhost');
@@ -47,7 +55,10 @@ function createApp(store = new TaskStore()) {
         return sendJson(res, 200, { status: 'ok' });
       }
       if (req.method === 'GET' && url.pathname === '/api/tasks') {
-        return sendJson(res, 200, store.list());
+        return sendJson(res, 200, store.list(readFilters(url.searchParams)));
+      }
+      if (req.method === 'GET' && url.pathname === '/api/stats') {
+        return sendJson(res, 200, store.stats());
       }
       if (req.method === 'POST' && url.pathname === '/api/tasks') {
         const body = await readJson(req);
